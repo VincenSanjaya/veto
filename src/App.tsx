@@ -344,7 +344,7 @@ export default function App() {
                 <span />{" "}
                 {mode === "demo"
                   ? "Demo mode · Sample data"
-                  : "Live wallet · Connection only"}
+                  : "Live wallet · Read-only"}
               </span>
               <WalletButton
                 wallet={wallet}
@@ -363,7 +363,7 @@ export default function App() {
                 </h1>
                 <p>
                   {mode === "live"
-                    ? "Your connected account. Approval scanning is coming in a later stage."
+                    ? "Check a selected token and spender. Keep your permissions in perspective."
                     : page === "overview"
                       ? "See who can spend your tokens. Decide how much access they need."
                       : "Every adjustment you make here stays in this local demo."}

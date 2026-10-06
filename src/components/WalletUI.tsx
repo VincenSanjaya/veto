@@ -1,5 +1,7 @@
 import { ArrowRight, Copy, LogOut, RefreshCw, Wallet } from "lucide-react";
 import type { BrowserWallet } from "../hooks/useBrowserWallet";
+import { useManualAllowances } from "../hooks/useManualAllowances";
+import { ManualAllowances } from "./ManualAllowances";
 import { shortAddress } from "../lib/allowances";
 
 export function WalletButton({
@@ -169,6 +171,7 @@ export function LiveWalletView({
   returnToDemo: () => void;
   open: () => void;
 }) {
+  const checks = useManualAllowances();
   return (
     <section
       className="activity-section live-wallet-section"
@@ -181,7 +184,7 @@ export function LiveWalletView({
           </h2>
           <p>Live wallet mode · Base Sepolia</p>
         </div>
-        <span className="sample-note">Connection only</span>
+        <span className="sample-note">Read-only</span>
       </div>
       {wallet.isConnected ? (
         <WalletIdentity wallet={wallet} />
@@ -203,22 +206,29 @@ export function LiveWalletView({
           </button>
         </div>
       )}
-      <div className="scan-placeholder">
-        <span className="small-icon">
-          <Wallet size={20} />
-        </span>
-        <h3>Approval scanning is not implemented yet.</h3>
-        <p>
-          {page === "overview"
-            ? "No token balances, allowances, or approval counts have been fetched for this wallet."
-            : "Live activity is not implemented. No wallet transactions or approval changes are fetched or performed here."}
-        </p>
-        <p>
-          This stage supports connection and network selection only. No tokens
-          are approved, revoked, or transferred, and no signatures are
-          requested.
-        </p>
-      </div>
+      {page === "overview" && wallet.isConnected ? (
+        <ManualAllowances checks={checks} supported={wallet.supported} />
+      ) : (
+        <div className="scan-placeholder">
+          <span className="small-icon">
+            <Wallet size={20} />
+          </span>
+          <h3>
+            {page === "activity"
+              ? "Live activity is not implemented yet."
+              : "Connect to check a selected allowance."}
+          </h3>
+          <p>
+            {page === "activity"
+              ? "Manual checks do not create transactions or simulated activity. Whole-wallet scanning is not implemented."
+              : "Manual check · Selected token and spender only. Whole-wallet scanning is not implemented."}
+          </p>
+          <p>
+            This stage is read-only. No signatures, token approvals, revokes, or
+            transfers are requested.
+          </p>
+        </div>
+      )}
       <div className="live-demo-action">
         <button
           className="secondary-button"
