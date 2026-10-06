@@ -19,6 +19,13 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { useBrowserWallet } from "./hooks/useBrowserWallet";
+import {
+  LiveWalletView,
+  WalletButton,
+  WalletIdentity,
+  WalletPicker,
+} from "./components/WalletUI";
 import { initialApprovals, sampleWallet } from "./data/approvals";
 import type { Approval } from "./data/approvals";
 import {
@@ -32,7 +39,7 @@ import {
 type Filter = "all" | "unlimited" | "above";
 type Modal =
   | { kind: "details" | "edit" | "revoke"; id: string }
-  | { kind: "reset" }
+  | { kind: "reset" | "wallet" }
   | null;
 type Activity = {
   id: number;
@@ -153,6 +160,21 @@ export default function App() {
   const [activity, setActivity] = useState<Activity[]>([]);
   const [notice, setNotice] = useState("");
   const [intro, setIntro] = useState(entranceNeeded);
+  const [mode, setMode] = useState<"demo" | "live">("demo");
+  const wallet = useBrowserWallet(() => {
+    setMode("live");
+    setModal(null);
+    setNotice("");
+  });
+  function returnToDemo() {
+    const showDemo = () => {
+      setMode("demo");
+      setModal(null);
+      setNotice("");
+    };
+    if (wallet.isConnected) wallet.disconnectWallet(showDemo);
+    else showDemo();
+  }
   const activeApprovals = approvals.filter(active);
   const selected =
     modal && "id" in modal
@@ -282,7 +304,7 @@ export default function App() {
               aria-current={page === "activity" ? "page" : undefined}
             >
               <History size={18} /> Activity{" "}
-              {activity.length > 0 && (
+              {mode === "demo" && activity.length > 0 && (
                 <span className="nav-count">{activity.length}</span>
               )}
             </button>
@@ -298,12 +320,14 @@ export default function App() {
                 <span /> LOCAL PROTOTYPE
               </span>
             </div>
-            <button
-              className="reset-button"
-              onClick={() => setModal({ kind: "reset" })}
-            >
-              <RotateCcw size={15} /> Reset demo
-            </button>
+            {mode === "demo" && (
+              <button
+                className="reset-button"
+                onClick={() => setModal({ kind: "reset" })}
+              >
+                <RotateCcw size={15} /> Reset demo
+              </button>
+            )}
             <div className="sidebar-footer">
               Veto <span>v0.1</span>
             </div>
@@ -317,11 +341,15 @@ export default function App() {
             </div>
             <div className="topbar-right">
               <span className="demo-badge">
-                <span /> Demo mode · Sample data
+                <span />{" "}
+                {mode === "demo"
+                  ? "Demo mode · Sample data"
+                  : "Live wallet · Connection only"}
               </span>
-              <span className="avatar" aria-label="Sample wallet">
-                V
-              </span>
+              <WalletButton
+                wallet={wallet}
+                open={() => setModal({ kind: "wallet" })}
+              />
             </div>
           </header>
           <main id="main" tabIndex={-1}>
@@ -334,22 +362,26 @@ export default function App() {
                     : "A clear record of your changes."}
                 </h1>
                 <p>
-                  {page === "overview"
-                    ? "See who can spend your tokens. Decide how much access they need."
-                    : "Every adjustment you make here stays in this local demo."}
+                  {mode === "live"
+                    ? "Your connected account. Approval scanning is coming in a later stage."
+                    : page === "overview"
+                      ? "See who can spend your tokens. Decide how much access they need."
+                      : "Every adjustment you make here stays in this local demo."}
                 </p>
               </div>
-              <div className="wallet-chip">
-                <Wallet size={16} />
-                <div>
-                  <span>Sample wallet</span>
-                  <strong>{shortAddress(sampleWallet)}</strong>
+              {mode === "demo" && (
+                <div className="wallet-chip">
+                  <Wallet size={16} />
+                  <div>
+                    <span>Sample wallet</span>
+                    <strong>{shortAddress(sampleWallet)}</strong>
+                  </div>
+                  <span className="wallet-status" />
                 </div>
-                <span className="wallet-status" />
-              </div>
+              )}
             </div>
             <div className="notice" role="status" aria-live="polite">
-              {notice && (
+              {mode === "demo" && notice && (
                 <>
                   <Check size={16} />
                   <span>{notice}</span>
@@ -363,7 +395,14 @@ export default function App() {
                 </>
               )}
             </div>
-            {page === "overview" ? (
+            {mode === "live" ? (
+              <LiveWalletView
+                wallet={wallet}
+                page={page}
+                returnToDemo={returnToDemo}
+                open={() => setModal({ kind: "wallet" })}
+              />
+            ) : page === "overview" ? (
               <>
                 <section
                   className="summary-grid"
@@ -729,15 +768,17 @@ export default function App() {
             )}
             <footer className="main-footer">
               <span>Your wallet. Your permissions.</span>
-              <button
-                className="mobile-reset"
-                onClick={() => setModal({ kind: "reset" })}
-              >
-                <RotateCcw size={12} /> Reset demo
-              </button>
+              {mode === "demo" && (
+                <button
+                  className="mobile-reset"
+                  onClick={() => setModal({ kind: "reset" })}
+                >
+                  <RotateCcw size={12} /> Reset demo
+                </button>
+              )}
               <span>
-                Built for clarity. <span className="footer-dot">✳</span> Veto
-                demo
+                Built for clarity. <span className="footer-dot">✳</span>{" "}
+                {mode === "demo" ? "Veto demo" : "Veto prototype"}
               </span>
             </footer>
           </main>
@@ -747,17 +788,27 @@ export default function App() {
         <Dialog
           key={modal.kind}
           title={
-            modal.kind === "details"
-              ? "Allowance details"
-              : modal.kind === "edit"
-                ? "Edit allowance"
-                : modal.kind === "revoke"
-                  ? "Revoke this allowance?"
-                  : "Reset the demo?"
+            modal.kind === "wallet"
+              ? wallet.isConnected
+                ? "Your connected wallet"
+                : "Connect a browser wallet"
+              : modal.kind === "details"
+                ? "Allowance details"
+                : modal.kind === "edit"
+                  ? "Edit allowance"
+                  : modal.kind === "revoke"
+                    ? "Revoke this allowance?"
+                    : "Reset the demo?"
           }
           panel={modal.kind === "details"}
           close={() => setModal(null)}
         >
+          {modal.kind === "wallet" &&
+            (wallet.isConnected ? (
+              <WalletIdentity wallet={wallet} />
+            ) : (
+              <WalletPicker wallet={wallet} />
+            ))}
           {selected && modal.kind === "details" && (
             <>
               <span className="dialog-demo">DEMO · SAMPLE APPROVAL</span>
