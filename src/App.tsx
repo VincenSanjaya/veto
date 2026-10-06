@@ -19,6 +19,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { useAllowanceWrites } from "./hooks/useAllowanceWrites";
+import { AllowanceChangeDialog } from "./components/AllowanceChangeDialog";
 import { useBrowserWallet } from "./hooks/useBrowserWallet";
 import {
   LiveWalletView,
@@ -161,6 +163,7 @@ export default function App() {
   const [notice, setNotice] = useState("");
   const [intro, setIntro] = useState(entranceNeeded);
   const [mode, setMode] = useState<"demo" | "live">("demo");
+  const writes = useAllowanceWrites();
   const wallet = useBrowserWallet(() => {
     setMode("live");
     setModal(null);
@@ -304,8 +307,8 @@ export default function App() {
               aria-current={page === "activity" ? "page" : undefined}
             >
               <History size={18} /> Activity{" "}
-              {mode === "demo" && activity.length > 0 && (
-                <span className="nav-count">{activity.length}</span>
+              {(mode === "demo" ? activity.length : writes.activity.length) > 0 && (
+                <span className="nav-count">{mode === "demo" ? activity.length : writes.activity.length}</span>
               )}
             </button>
           </nav>
@@ -344,7 +347,7 @@ export default function App() {
                 <span />{" "}
                 {mode === "demo"
                   ? "Demo mode · Sample data"
-                  : "Live wallet · Read-only"}
+                  : "Live wallet · Base Sepolia"}
               </span>
               <WalletButton
                 wallet={wallet}
@@ -398,6 +401,7 @@ export default function App() {
             {mode === "live" ? (
               <LiveWalletView
                 wallet={wallet}
+                writes={writes}
                 page={page}
                 returnToDemo={returnToDemo}
                 open={() => setModal({ kind: "wallet" })}
@@ -784,6 +788,9 @@ export default function App() {
           </main>
         </div>
       </div>
+      {mode === "live" && writes.dialog?.open && (
+        <AllowanceChangeDialog key={writes.dialog.id} writes={writes} />
+      )}
       {modal && (
         <Dialog
           key={modal.kind}

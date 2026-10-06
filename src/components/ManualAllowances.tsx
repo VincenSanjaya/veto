@@ -8,14 +8,17 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { FormEvent } from "react";
+import type { useAllowanceWrites } from "../hooks/useAllowanceWrites";
 import type { useManualAllowances } from "../hooks/useManualAllowances";
 import { displayTokenAmount, exposure } from "../lib/liveAllowances";
 
 export function ManualAllowances({
   checks,
+  writes,
   supported,
 }: {
   checks: ReturnType<typeof useManualAllowances>;
+  writes: ReturnType<typeof useAllowanceWrites>;
   supported: boolean;
 }) {
   const [token, setToken] = useState("");
@@ -241,15 +244,33 @@ export function ManualAllowances({
                             <RefreshCw size={12} /> Refresh
                           </button>
                           <div className="row-actions">
-                            <button className="edit-button" disabled>
+                            <button
+                              className="edit-button"
+                              disabled={
+                                disabled ||
+                                writes.blocked ||
+                                row.decimals === null
+                              }
+                              onClick={() => writes.store.begin(row, "edit")}
+                            >
                               Edit
                             </button>
-                            <button className="revoke-button" disabled>
+                            <button
+                              className="revoke-button"
+                              disabled={
+                                disabled ||
+                                writes.blocked ||
+                                row.allowance === 0n
+                              }
+                              onClick={() => writes.store.begin(row, "revoke")}
+                            >
                               Revoke
                             </button>
                           </div>
                           <span className="allowance-note">
-                            Coming next · Read-only for now
+                            {row.decimals === null
+                              ? "Edit unavailable · Decimals missing"
+                              : "Confirmation required · Testnet gas"}
                           </span>
                         </div>
                       </td>

@@ -66,7 +66,7 @@ export async function injectWallet(page: Page, legacy = false) {
           throw new Error(`Unexpected wallet method: ${method}`);
         },
       };
-      Object.assign(window, { walletFixture: { state, emit } });
+      Object.assign(window, { walletFixture: { state, emit, provider } });
       if (legacy) Object.assign(window, { ethereum: provider });
       else {
         Object.assign(window, { ethereum: provider });

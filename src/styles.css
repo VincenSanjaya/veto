@@ -2121,3 +2121,163 @@ th {
     border-radius: 0;
   }
 }
+
+.allowance-write-dialog {
+  width: 530px;
+}
+.write-review {
+  margin-top: 22px;
+}
+.write-review > div {
+  font-size: 11px;
+}
+.write-review dd {
+  text-align: right;
+  overflow-wrap: anywhere;
+  max-width: 65%;
+}
+.write-review .address-detail dd {
+  max-width: 100%;
+  text-align: left;
+}
+.write-steps {
+  padding: 16px;
+  margin-top: 18px;
+  border: 1px solid #415231;
+  border-radius: 7px;
+  background: #222e19;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #b9cda3;
+}
+.write-steps strong {
+  color: #d6e6c2;
+  font-weight: 500;
+}
+.write-steps ol {
+  padding-left: 18px;
+  margin: 10px 0;
+}
+.write-steps li + li {
+  margin-top: 8px;
+}
+.write-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #405331;
+  border-radius: 6px;
+  background: #222e1a;
+  color: #b8d49a;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.write-status strong {
+  text-transform: capitalize;
+  font-size: 12px;
+  font-weight: 550;
+}
+.phase-rejected,
+.phase-reverted,
+.phase-failed,
+.phase-confirmation-unknown {
+  border-color: #6e5535;
+  background: #2d2518;
+  color: #d8bf96;
+}
+.reset-verified {
+  padding: 13px;
+  margin-top: 16px;
+  color: #c2e3a2;
+  border: 1px solid #587a38;
+  border-radius: 6px;
+  background: #273b1b;
+  font-size: 11px;
+}
+.live-transactions {
+  margin-top: 30px;
+  padding-top: 25px;
+  border-top: 1px solid var(--line);
+}
+.live-activity-content {
+  min-width: 0;
+}
+.activity-address {
+  font-family: monospace;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.transaction-tag {
+  font-size: 9px;
+  background: #2b351f;
+  color: #b9d29d;
+  padding: 3px 7px;
+  border: 1px solid #465b31;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+.status-confirmation-unknown,
+.status-reverted,
+.status-rejected,
+.status-failed,
+.status-replaced {
+  color: #d5bd91;
+  background: #30281a;
+  border-color: #665130;
+}
+.transaction-link {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  color: #c2db9f;
+  font-family: monospace;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  line-height: 1.8;
+}
+.transaction-link > span {
+  width: 100%;
+  font-family: "DM Sans", sans-serif;
+  font-size: 10px;
+  word-break: normal;
+}
+.transaction-message {
+  line-height: 1.9;
+}
+.receipt-check {
+  margin-top: 14px;
+  font-size: 10px;
+  padding: 9px 12px;
+}
+.live-transactions .activity-list li {
+  flex-wrap: wrap;
+}
+.live-transactions .activity-list li > div {
+  flex: 1;
+  min-width: 0;
+}
+.live-transactions .activity-list time {
+  font-size: 9px;
+}
+.allowance-write-dialog .dialog-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 700px) {
+  .allowance-write-dialog {
+    padding: 20px;
+  }
+  .write-review dd {
+    font-size: 10px;
+  }
+  .allowance-write-dialog .dialog-actions .primary-button {
+    flex: 1;
+  }
+  .live-transactions .activity-list time {
+    padding-left: 47px;
+  }
+}

@@ -100,13 +100,14 @@ export async function readAllowancePair(
   scope: WalletScope,
   token: Address,
   spender: Address,
+  atBlock?: bigint,
 ): Promise<CheckedPair> {
   if (scope.chainId !== baseSepolia.id || client.chain.id !== baseSepolia.id)
     throw new Error("Select Base Sepolia before checking an allowance.");
   let blockNumber: bigint;
   let code: `0x${string}` | undefined;
   try {
-    blockNumber = await getBlockNumber(client, { cacheTime: 0 });
+    blockNumber = atBlock ?? (await getBlockNumber(client, { cacheTime: 0 }));
     code = await getCode(client, { address: token, blockNumber });
   } catch (error) {
     throw readError(error, "Token contract verification");
@@ -211,6 +212,24 @@ export class AllowanceSession {
       pending: false,
       error: "",
       message: "",
+    });
+  }
+  accept(result: CheckedPair) {
+    if (
+      `${result.chainId}:${result.owner.toLowerCase()}` !==
+      this.snapshot.scope?.key
+    )
+      return;
+    this.generation++;
+    const results = this.snapshot.results.filter(
+      (item) => item.key !== result.key,
+    );
+    this.publish({
+      ...this.snapshot,
+      results: [result, ...results],
+      pending: false,
+      error: "",
+      message: `Onchain values verified at block ${result.blockNumber}. Selected pair only.`,
     });
   }
   async check(tokenInput: string, spenderInput: string) {

@@ -135,7 +135,7 @@ test("manual reads: network gating, validation, snapshots, refresh, failures and
     page
       .locator(".checked-table")
       .getByRole("button", { name: "Revoke", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page.setViewportSize({ width: 1440, height: 1050 });
   await page.screenshot({
     path: testInfo.outputPath("live-desktop.png"),

@@ -1,5 +1,7 @@
 import { ArrowRight, Copy, LogOut, RefreshCw, Wallet } from "lucide-react";
 import type { BrowserWallet } from "../hooks/useBrowserWallet";
+import type { useAllowanceWrites } from "../hooks/useAllowanceWrites";
+import { LiveActivity } from "./LiveActivity";
 import { useManualAllowances } from "../hooks/useManualAllowances";
 import { ManualAllowances } from "./ManualAllowances";
 import { shortAddress } from "../lib/allowances";
@@ -162,11 +164,13 @@ export function WalletIdentity({ wallet }: { wallet: BrowserWallet }) {
 
 export function LiveWalletView({
   wallet,
+  writes,
   page,
   returnToDemo,
   open,
 }: {
   wallet: BrowserWallet;
+  writes: ReturnType<typeof useAllowanceWrites>;
   page: "overview" | "activity";
   returnToDemo: () => void;
   open: () => void;
@@ -184,7 +188,7 @@ export function LiveWalletView({
           </h2>
           <p>Live wallet mode · Base Sepolia</p>
         </div>
-        <span className="sample-note">Read-only</span>
+        <span className="sample-note">Manual checks</span>
       </div>
       {wallet.isConnected ? (
         <WalletIdentity wallet={wallet} />
@@ -207,27 +211,33 @@ export function LiveWalletView({
         </div>
       )}
       {page === "overview" && wallet.isConnected ? (
-        <ManualAllowances checks={checks} supported={wallet.supported} />
+        <ManualAllowances
+          checks={checks}
+          writes={writes}
+          supported={wallet.supported}
+        />
+      ) : page === "activity" ? (
+        <LiveActivity writes={writes} />
       ) : (
         <div className="scan-placeholder">
-          <span className="small-icon">
-            <Wallet size={20} />
-          </span>
-          <h3>
-            {page === "activity"
-              ? "Live activity is not implemented yet."
-              : "Connect to check a selected allowance."}
-          </h3>
+          <h3>Connect to check a selected allowance.</h3>
           <p>
-            {page === "activity"
-              ? "Manual checks do not create transactions or simulated activity. Whole-wallet scanning is not implemented."
-              : "Manual check · Selected token and spender only. Whole-wallet scanning is not implemented."}
-          </p>
-          <p>
-            This stage is read-only. No signatures, token approvals, revokes, or
-            transfers are requested.
+            Manual check · Selected token and spender only. Whole-wallet
+            scanning is not implemented.
           </p>
         </div>
+      )}
+      {writes.message && (
+        <p className="write-status" role="status">
+          {writes.message}
+        </p>
+      )}
+      {writes.blocked && (
+        <p className="wallet-helper">
+          An allowance change is awaiting resolution. Further writes are
+          blocked. Use Activity for the originating account on Base Sepolia to
+          check its status.
+        </p>
       )}
       <div className="live-demo-action">
         <button

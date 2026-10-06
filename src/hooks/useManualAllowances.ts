@@ -3,6 +3,7 @@ import { useClient, useConnection } from "wagmi";
 import { getConnection } from "wagmi/actions";
 import { baseSepolia } from "viem/chains";
 import { walletConfig } from "../lib/wagmi";
+import { subscribeVerifiedAllowance } from "../lib/liveWriteStore";
 import {
   AllowanceSession,
   readAllowancePair,
@@ -33,8 +34,12 @@ export function useManualAllowances() {
     update();
     // Invalidate synchronously on wallet state updates, before late RPC promises resolve.
     const unsubscribe = walletConfig.subscribe((state) => state, update);
+    const unsubscribeVerified = subscribeVerifiedAllowance((result) =>
+      session.accept(result),
+    );
     return () => {
       unsubscribe();
+      unsubscribeVerified();
       session.setScope(null);
     };
   }, [session]);

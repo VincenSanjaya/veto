@@ -93,7 +93,7 @@ test("discovery, pending/rejection, live isolation, explicit switching, wallet e
     .getByRole("button", { name: "Fixture Wallet", exact: true })
     .click();
   await expect(
-    page.getByText("Live wallet · Read-only", { exact: true }),
+    page.getByText("Live wallet · Base Sepolia", { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Check allowance", exact: true }),
