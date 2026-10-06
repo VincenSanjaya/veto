@@ -183,6 +183,7 @@ async function fixture(page: Page) {
   await page
     .getByRole("button", { name: "Switch to Base Sepolia", exact: true })
     .click();
+  await page.getByLabel("Show revoked", { exact: true }).check();
   await page.getByLabel("Token contract address", { exact: true }).fill(token);
   await page.getByLabel("Spender address", { exact: true }).fill(spender);
   await page.getByRole("button", { name: "Check", exact: true }).click();

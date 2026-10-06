@@ -188,7 +188,7 @@ export function LiveWalletView({
           </h2>
           <p>Live wallet mode · Base Sepolia</p>
         </div>
-        <span className="sample-note">Manual checks</span>
+        <span className="sample-note">Selected scope</span>
       </div>
       {wallet.isConnected ? (
         <WalletIdentity wallet={wallet} />

@@ -4,6 +4,8 @@ import { getConnection } from "wagmi/actions";
 import { baseSepolia } from "viem/chains";
 import { walletConfig } from "../lib/wagmi";
 import { subscribeVerifiedAllowance } from "../lib/liveWriteStore";
+import { ApprovalScan } from "../lib/approvalScan";
+import { scanReader } from "../lib/scanClient";
 import {
   AllowanceSession,
   readAllowancePair,
@@ -23,13 +25,26 @@ export function useManualAllowances() {
     [client],
   );
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
+  const scanner = useMemo(
+    () =>
+      new ApprovalScan({
+        ...scanReader,
+        accept: (pair) => session.accept(pair),
+      }),
+    [session],
+  );
+  const scan = useSyncExternalStore(scanner.subscribe, scanner.getSnapshot);
 
   useEffect(() => {
     const update = () => {
       const current = getConnection(walletConfig);
-      session.setScope(
-        walletScope(current.address, current.chainId, current.isConnected),
+      const scope = walletScope(
+        current.address,
+        current.chainId,
+        current.isConnected,
       );
+      session.setScope(scope);
+      scanner.setScope(scope);
     };
     update();
     // Invalidate synchronously on wallet state updates, before late RPC promises resolve.
@@ -41,8 +56,9 @@ export function useManualAllowances() {
       unsubscribe();
       unsubscribeVerified();
       session.setScope(null);
+      scanner.setScope(null);
     };
-  }, [session]);
+  }, [session, scanner]);
 
   const current = walletScope(
     connection.address,
@@ -56,6 +72,22 @@ export function useManualAllowances() {
     error: matching ? snapshot.error : "",
     message: matching ? snapshot.message : "",
     enabled: Boolean(current && matching),
+    scan: matching
+      ? scan
+      : {
+          ...scan,
+          status: "idle" as const,
+          from: null,
+          to: null,
+          coveredTo: null,
+          message: "",
+          error: "",
+          discovered: 0,
+          verified: 0,
+          failedPairs: 0,
+        },
+    startScan: () => scanner.start(),
+    cancelScan: () => scanner.cancel(),
     check: (token: string, spender: string) => session.check(token, spender),
   };
 }

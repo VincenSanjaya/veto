@@ -2281,3 +2281,73 @@ th {
     padding-left: 47px;
   }
 }
+
+.approval-scan-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.scan-token {
+  color: var(--muted);
+  font-size: 12px;
+}
+.scan-token .checked-address {
+  margin-top: 8px;
+}
+.scan-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+.scan-coverage {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.scan-coverage strong {
+  color: #eceee8;
+  font-weight: 500;
+}
+.scan-coverage progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--lime);
+  margin: 12px 0;
+}
+.scan-status.status-partial,
+.scan-status.status-cancelled,
+.scan-status.status-failed {
+  color: #d9bb73;
+}
+.checked-results-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 24px 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.show-revoked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #eceee8;
+  cursor: pointer;
+}
+.show-revoked input {
+  accent-color: var(--lime);
+  width: 16px;
+  height: 16px;
+}
+@media (max-width: 600px) {
+  .approval-scan-panel {
+    padding: 18px 14px;
+  }
+  .scan-coverage {
+    overflow-wrap: anywhere;
+  }
+}

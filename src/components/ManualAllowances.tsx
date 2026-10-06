@@ -10,6 +10,7 @@ import {
 import type { FormEvent } from "react";
 import type { useAllowanceWrites } from "../hooks/useAllowanceWrites";
 import type { useManualAllowances } from "../hooks/useManualAllowances";
+import { ApprovalScanPanel } from "./ApprovalScan";
 import { displayTokenAmount, exposure } from "../lib/liveAllowances";
 
 export function ManualAllowances({
@@ -21,15 +22,21 @@ export function ManualAllowances({
   writes: ReturnType<typeof useAllowanceWrites>;
   supported: boolean;
 }) {
+  const [showRevoked, setShowRevoked] = useState(false);
+  const visible = checks.results.filter(
+    (row) => showRevoked || row.allowance > 0n,
+  );
   const [token, setToken] = useState("");
   const [spender, setSpender] = useState("");
-  const disabled = !checks.enabled || checks.pending;
+  const disabled =
+    !checks.enabled || checks.pending || checks.scan.status === "loading";
   function submit(event: FormEvent) {
     event.preventDefault();
     void checks.check(token, spender);
   }
   return (
     <section className="manual-allowances" aria-labelledby="manual-heading">
+      <ApprovalScanPanel checks={checks} />
       <div className="section-title">
         <div>
           <h2 id="manual-heading">Check allowance</h2>
@@ -55,7 +62,7 @@ export function ManualAllowances({
             autoComplete="off"
             spellCheck={false}
             required
-            disabled={!checks.enabled}
+            disabled={!checks.enabled || checks.scan.status === "loading"}
             aria-describedby="check-help"
           />
         </div>
@@ -72,7 +79,7 @@ export function ManualAllowances({
             autoComplete="off"
             spellCheck={false}
             required
-            disabled={!checks.enabled}
+            disabled={!checks.enabled || checks.scan.status === "loading"}
             aria-describedby="check-help"
           />
         </div>
@@ -99,10 +106,24 @@ export function ManualAllowances({
           displayed blocks.
         </p>
       )}
+      <div className="checked-results-toolbar">
+        <p>
+          Manual + scanned pairs · Verified rows only · Each row shows its
+          snapshot block.
+        </p>
+        <label className="show-revoked">
+          <input
+            type="checkbox"
+            checked={showRevoked}
+            onChange={(event) => setShowRevoked(event.target.checked)}
+          />{" "}
+          Show revoked
+        </label>
+      </div>
       {checks.results.length > 0 && (
         <>
           <p className="checked-summary-label">
-            Summary · {checks.results.length} successfully checked{" "}
+            Summary · {checks.results.length} successfully verified unique{" "}
             {checks.results.length === 1 ? "pair" : "pairs"} only
           </p>
           <div
@@ -149,6 +170,15 @@ export function ManualAllowances({
               not prove a spender is malicious.
             </p>
           </div>
+          {visible.length === 0 && (
+            <div className="empty-state">
+              <h3>No active approvals in verified results.</h3>
+              <p>
+                Use Show revoked to see zero allowances. Scan coverage is
+                limited to the displayed token and range.
+              </p>
+            </div>
+          )}
           <p className="mobile-table-hint">
             Swipe to see amounts and actions <ArrowUpRight size={12} />
           </p>
@@ -156,7 +186,7 @@ export function ManualAllowances({
             className="table-scroll checked-table"
             tabIndex={0}
             role="region"
-            aria-label="Manually checked allowances"
+            aria-label="Verified live allowances"
           >
             <table>
               <thead>
@@ -170,7 +200,7 @@ export function ManualAllowances({
                 </tr>
               </thead>
               <tbody>
-                {checks.results.map((row) => {
+                {visible.map((row) => {
                   const state = exposure(row.balance, row.allowance);
                   return (
                     <tr key={row.key}>
@@ -282,10 +312,10 @@ export function ManualAllowances({
           </div>
           <div className="table-footer">
             <span>
-              {checks.results.length} checked pairs · Each row is a block
-              snapshot
+              {visible.length} visible / {checks.results.length} verified unique
+              pairs · Each row is a block snapshot
             </span>
-            <span>Whole-wallet scanning is not implemented</span>
+            <span>USDC range scan + selected manual pairs only</span>
           </div>
         </>
       )}
@@ -294,8 +324,8 @@ export function ManualAllowances({
           <Search size={25} />
           <h3>No pairs checked yet.</h3>
           <p>
-            Enter one token and one spender to read their allowance. No
-            wallet-wide scan has been performed.
+            Scan the selected USDC range or check one token and spender
+            manually. No whole-wallet scan has been performed.
           </p>
         </div>
       )}

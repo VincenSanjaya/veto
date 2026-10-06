@@ -159,6 +159,7 @@ test("manual reads: network gating, validation, snapshots, refresh, failures and
         value.toLowerCase() === "0x1234567890123456789012345678901234567890",
     ),
   ).toBe(true);
+  await page.getByLabel("Show revoked", { exact: true }).check();
   allowance = 0n;
   decimalsMissing = false;
   await page.getByRole("button", { name: /^Refresh allowance/ }).click();

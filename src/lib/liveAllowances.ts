@@ -220,6 +220,11 @@ export class AllowanceSession {
       this.snapshot.scope?.key
     )
       return;
+    const previous = this.snapshot.results.find(
+      (item) => item.key === result.key,
+    );
+    // A late scan snapshot must never replace a newer manual/post-transaction read.
+    if (previous && previous.blockNumber > result.blockNumber) return;
     this.generation++;
     const results = this.snapshot.results.filter(
       (item) => item.key !== result.key,
