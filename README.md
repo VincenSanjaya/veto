@@ -28,7 +28,7 @@ The production build is written to `dist/`. Preview serves that local build. For
 - `/` opens the English landing page. Wallet hooks and dashboard providers are not mounted here. Opening it requests no wallet connection, signature, scan, or transaction.
 - **Launch app** opens `/app`. **Try demo** opens `/app?mode=demo`, disconnected and in Demo. Fresh dashboard loads always start in Demo; connecting is an explicit action.
 - `/app` and `/app/` support direct navigation and refresh under Vite dev/preview. The dashboard footer's **Back to Veto** link returns to `/`.
-- A future static host must provide an SPA fallback from `/app` to `index.html`. No deployment configuration or publishing has been performed.
+- The root `vercel.json` provides an SPA fallback to `index.html` for direct visits and refreshes, including `/app`. Other static hosts need an equivalent fallback.
 
 The hero has one skippable 2.8-second liquid-glass entrance per browser session, with no separate logo intro or navigation delay. Two custom WebGL glass volumes frame the headline, followed by subtle pointer/float motion and scroll-linked outward movement. The decorative canvas spans the viewport independently of the padded text container, and its drawing buffer follows wrapper resizing. Below the hero, headings and cards reveal once.
 
@@ -117,4 +117,18 @@ Coverage includes routes/direct refresh, wallet-free landing and Demo, keyboard 
 4. On Base Sepolia, manually check USDC and a nonzero spender (your address is valid). No gas is needed for reads. Verify amounts/block, zero results, duplicate refresh, invalid addresses, and EOA-token rejection. Scan a wallet with a known recent USDC event; compare actual snapshot allowance, toggle Show revoked, cancel/retry, and change accounts mid-scan. Block the public RPC in browser tools to inspect failures. Real RPC retention/range/completeness behavior remains infrastructure-dependent.
 5. Only if you choose to perform real testnet writes, use test assets and testnet ETH. Inspect all confirmation addresses, reject a request, then verify zero-to-finite, reset/explicit Continue, cancellation after reset, and Revoke. Compare actual explorer receipts and onchain allowance with Activity/summary. Check insufficient gas, replacement, and delayed receipts; do not retry an unknown transaction blindly. Deployed-token behavior and real wallet transaction prompts are not established by mocked tests.
 
-No deployment or push is part of this checkpoint.
+## Vercel deployment configuration
+
+Use these project settings when importing this repository into Vercel:
+
+| Setting | Value |
+| --- | --- |
+| Framework | Vite |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Node.js | `22.x` |
+| Environment variables | None required for the current configuration |
+
+The root `vercel.json` rewrites application routes to `/index.html`, allowing `/app` to open directly and survive a refresh. The dashboard design, wallet behavior, and Demo/Live separation remain unchanged. After a future deployment, manually verify `/`, `/app`, and `/app?mode=demo`, including direct visits and refreshes.
+
+Deployment has not been performed as part of this preparation.
