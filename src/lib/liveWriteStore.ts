@@ -95,9 +95,11 @@ export const liveWriteStore = new AllowanceWrites({
       throw new Error(
         "approve returned false during simulation. No transaction was requested.",
       );
-    return async () => {
+    return async (validate) => {
       const walletClient = await assertWallet(pair);
       assertConnection(pair);
+      // Recheck the confirmation generation after all async wallet queries (also A → B → A).
+      validate();
       // Explicit JSON-RPC account; no private key, signing shortcut, or chain auto-switch.
       return writeContract(walletClient, {
         ...simulation.request,

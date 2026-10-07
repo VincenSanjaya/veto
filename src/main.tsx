@@ -1,19 +1,27 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
+import Landing from "./Landing";
 import "./styles.css";
-import { WagmiProvider } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { walletConfig } from "./lib/wagmi";
+import "./landing.css";
 
-const queryClient = new QueryClient();
-
+// The landing never mounts wallet providers or discovery hooks.
+const DashboardRoot = lazy(() => import("./DashboardRoot"));
+const dashboard =
+  window.location.pathname === "/app" || window.location.pathname === "/app/";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <WagmiProvider config={walletConfig} reconnectOnMount={false}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </WagmiProvider>
+    {dashboard ? (
+      <Suspense
+        fallback={
+          <div className="route-loading" role="status">
+            Opening Veto… <a href="/">Back to Veto</a>
+          </div>
+        }
+      >
+        <DashboardRoot />
+      </Suspense>
+    ) : (
+      <Landing />
+    )}
   </React.StrictMode>,
 );

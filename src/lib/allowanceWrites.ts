@@ -82,7 +82,10 @@ export type ReceiptOutcome = {
 export type WriteDependencies = {
   read: (pair: CheckedPair, blockNumber?: bigint) => Promise<CheckedPair>;
   assertWallet: (pair: CheckedPair) => Promise<void>;
-  prepare: (pair: CheckedPair, amount: bigint) => Promise<() => Promise<Hash>>;
+  prepare: (
+    pair: CheckedPair,
+    amount: bigint,
+  ) => Promise<(validate: () => void) => Promise<Hash>>;
   receipt: (hash: Hash) => Promise<ReceiptOutcome>;
   observed: (pair: CheckedPair) => void;
 };
@@ -372,7 +375,15 @@ export class AllowanceWrites {
         dialog.id,
       );
       submitting = true;
-      const hash = await submit();
+      const hash = await submit(() => {
+        if (!this.sameContext(pair, generation))
+          throw Object.assign(
+            new Error(
+              "The wallet confirmation session changed before submission.",
+            ),
+            { name: "WalletContextChangedError" },
+          );
+      });
       this.updateEntry(entry.id, {
         hash,
         status: "pending",

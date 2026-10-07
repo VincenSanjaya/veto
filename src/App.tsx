@@ -19,6 +19,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { Wordmark } from "./components/Wordmark";
 import { useAllowanceWrites } from "./hooks/useAllowanceWrites";
 import { AllowanceChangeDialog } from "./components/AllowanceChangeDialog";
 import { useBrowserWallet } from "./hooks/useBrowserWallet";
@@ -51,23 +52,6 @@ type Activity = {
   next: string;
   time: Date;
 };
-
-function Wordmark({ large = false }: { large?: boolean }) {
-  return (
-    <span
-      className={`wordmark ${large ? "wordmark-large" : ""}`}
-      aria-label="Veto"
-    >
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 5h8l6 15 5-15h7L18 29h-5z" fill="currentColor" />
-        <path d="M3 5h8l3 7H6z" fill="#9fae81" />
-      </svg>
-      <span>
-        veto<span className="wordmark-dot">.</span>
-      </span>
-    </span>
-  );
-}
 
 function Dialog({
   children,
@@ -138,16 +122,6 @@ function Allowance({ approval }: { approval: Approval }) {
   );
 }
 
-function entranceNeeded() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-    return false;
-  try {
-    return !sessionStorage.getItem("veto-entered");
-  } catch {
-    return true;
-  }
-}
-
 export default function App() {
   const [approvals, setApprovals] = useState<Approval[]>(() =>
     initialApprovals.map((a) => ({ ...a })),
@@ -161,7 +135,6 @@ export default function App() {
   const [error, setError] = useState("");
   const [activity, setActivity] = useState<Activity[]>([]);
   const [notice, setNotice] = useState("");
-  const [intro, setIntro] = useState(entranceNeeded);
   const [mode, setMode] = useState<"demo" | "live">("demo");
   const writes = useAllowanceWrites();
   const wallet = useBrowserWallet(() => {
@@ -193,20 +166,6 @@ export default function App() {
         .toLowerCase()
         .includes(query.toLowerCase().trim()),
   );
-
-  function finishIntro() {
-    try {
-      sessionStorage.setItem("veto-entered", "true");
-    } catch {
-      /* Session storage may be unavailable. */
-    }
-    setIntro(false);
-  }
-  useEffect(() => {
-    if (!intro) return;
-    const timer = window.setTimeout(finishIntro, 1500);
-    return () => window.clearTimeout(timer);
-  }, [intro]);
 
   function openEdit(approval: Approval) {
     setAmount(
@@ -275,19 +234,7 @@ export default function App() {
 
   return (
     <>
-      {intro ? (
-        <div className="entrance">
-          <div className="entrance-center">
-            <Wordmark large />
-            <p>Your wallet. Your permissions.</p>
-            <div className="entrance-line" />
-          </div>
-          <button className="skip-intro" onClick={finishIntro}>
-            Skip intro <ArrowRight size={16} />
-          </button>
-        </div>
-      ) : null}
-      <div className="app-shell" inert={intro}>
+      <div className="app-shell">
         <aside className="sidebar">
           <a className="brand" href="#main" onClick={() => setPage("overview")}>
             <Wordmark />
@@ -307,8 +254,11 @@ export default function App() {
               aria-current={page === "activity" ? "page" : undefined}
             >
               <History size={18} /> Activity{" "}
-              {(mode === "demo" ? activity.length : writes.activity.length) > 0 && (
-                <span className="nav-count">{mode === "demo" ? activity.length : writes.activity.length}</span>
+              {(mode === "demo" ? activity.length : writes.activity.length) >
+                0 && (
+                <span className="nav-count">
+                  {mode === "demo" ? activity.length : writes.activity.length}
+                </span>
               )}
             </button>
           </nav>
@@ -771,7 +721,9 @@ export default function App() {
               </section>
             )}
             <footer className="main-footer">
-              <span>Your wallet. Your permissions.</span>
+              <a href="/" className="back-to-landing" aria-label="Back to Veto">
+                ← Back to Veto
+              </a>
               {mode === "demo" && (
                 <button
                   className="mobile-reset"

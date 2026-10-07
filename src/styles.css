@@ -2288,6 +2288,23 @@ th {
   padding: 24px;
   margin-bottom: 32px;
 }
+
+/* Keep both dashboard destinations reachable when the Activity badge appears. */
+@media (max-width: 360px) {
+  .sidebar {
+    padding-inline: 16px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .sidebar nav {
+    gap: 4px;
+    margin-left: auto;
+  }
+  .nav-item {
+    padding-inline: 6px;
+    gap: 5px;
+  }
+}
 .scan-token {
   color: var(--muted);
   font-size: 12px;

@@ -19,7 +19,11 @@ export function useAllowanceWrites() {
       );
     };
     update();
-    return walletConfig.subscribe((state) => state, update);
+    const unsubscribe = walletConfig.subscribe((state) => state, update);
+    return () => {
+      unsubscribe();
+      liveWriteStore.setScope(null);
+    };
   }, []);
   const scope = walletScope(
     connection.address,

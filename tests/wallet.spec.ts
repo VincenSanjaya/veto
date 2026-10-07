@@ -10,7 +10,7 @@ async function fixture(page: Page, script: string) {
 test("missing-wallet state and demo interactions remain functional", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await expect(page.locator("tbody tr")).toHaveCount(6);
   await page.getByRole("button", { name: "Unlimited", exact: true }).click();
   await expect(page.locator("tbody tr")).toHaveCount(2);
@@ -63,7 +63,7 @@ test("discovery, pending/rejection, live isolation, explicit switching, wallet e
 }) => {
   await injectWallet(page);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.goto("/");
+  await page.goto("/app");
   await expect(page.locator("tbody tr")).toHaveCount(6);
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
@@ -192,7 +192,7 @@ test("legacy injection, explicit return disconnects, mobile layout, keyboard dia
 }) => {
   await injectWallet(page, true);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/app");
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();

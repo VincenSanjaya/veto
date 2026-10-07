@@ -148,7 +148,7 @@ async function fixture(page: Page) {
       json: Array.isArray(payload) ? payload.map(response) : response(payload),
     });
   });
-  await page.goto("/");
+  await page.goto("/app");
   await page.evaluate(() => {
     const fixture = window as unknown as {
       walletFixture: {
@@ -332,4 +332,103 @@ test("false approve simulation blocks the actual wallet adapter; reverted receip
     page.getByRole("button", { name: "Continue · Submit new allowance" }),
   ).toHaveCount(0);
   expect(state.submissions).toEqual([0n]);
+});
+
+test("mobile live Edit/Revoke dialogs, approval table and Activity keep all content reachable", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  const state = await fixture(page);
+  const noOverflow = async () => {
+    const overflowing = await page.evaluate(() =>
+      [...document.querySelectorAll("body *")]
+        .filter((node) => {
+          const box = node.getBoundingClientRect();
+          return box.right > innerWidth && !node.closest(".checked-table");
+        })
+        .map(
+          (node) =>
+            `${node.tagName}.${node.className}: ${node.getBoundingClientRect().right}`,
+        ),
+    );
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+      ),
+      overflowing.join("\n"),
+    ).toBe(false);
+    if (await page.getByRole("dialog").count()) {
+      const box = await page.getByRole("dialog").boundingBox();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+      expect(
+        await page
+          .getByRole("dialog")
+          .evaluate((node) => node.scrollWidth > node.clientWidth),
+      ).toBe(false);
+    }
+  };
+  await noOverflow();
+  await page.locator(".checked-table").evaluate((node) => {
+    node.scrollLeft = node.scrollWidth;
+  });
+  await reviewEdit(page);
+  await noOverflow();
+  await page
+    .getByRole("button", { name: "Confirm reset to zero", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("mobile-edit.png") });
+  await page
+    .getByRole("button", { name: "Confirm reset to zero", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Continue · Submit new allowance" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Continue · Submit new allowance" })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Receipt confirmed. The displayed allowance",
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  await page
+    .locator(".checked-table")
+    .getByRole("button", { name: "Revoke", exact: true })
+    .click();
+  await noOverflow();
+  await page
+    .getByRole("button", { name: "Confirm revoke", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("mobile-revoke.png") });
+  await page
+    .getByRole("button", { name: "Confirm revoke", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Receipt confirmed. The displayed allowance",
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  expect(state.submissions).toEqual([0n, 2_000_000n, 0n]);
+  await expect(
+    page
+      .locator(".checked-table")
+      .getByRole("button", { name: "Edit", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: /^Activity/ }).click();
+  await expect(page.locator(".transaction-link")).toHaveCount(3);
+  await noOverflow();
+  await page.screenshot({
+    path: testInfo.outputPath("mobile-live-activity.png"),
+    fullPage: true,
+  });
+  await expect(
+    page.locator(".glass-canvas, .liquid-scene, .landing"),
+  ).toHaveCount(0);
 });

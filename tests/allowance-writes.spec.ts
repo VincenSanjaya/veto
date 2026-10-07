@@ -329,3 +329,46 @@ test("insufficient testnet ETH is a definitive pre-broadcast failure; account ch
   expect(observed).toHaveLength(1); // Initial re-read only; no old-owner result enters the new scope.
   expect(store.getSnapshot().dialog?.phase).toBe("invalidated");
 });
+
+test("final submit guard invalidates account A → B → A during wallet queries, and terminal outcomes release the lock", async () => {
+  let release!: () => void;
+  let querying = false;
+  let submissions = 0;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const store = new AllowanceWrites({
+    read: async () => pair,
+    assertWallet: async () => {},
+    prepare: async () => async (validate) => {
+      querying = true;
+      await gate;
+      validate();
+      submissions++;
+      return hash;
+    },
+    receipt: async () => ({ hash, status: "success", blockNumber: 7n }),
+    observed: () => {},
+  });
+  store.setScope(scope);
+  store.begin(pair, "revoke");
+  const running = store.confirm();
+  await expect.poll(() => querying).toBe(true);
+  store.setScope(null);
+  store.setScope(scope);
+  release();
+  await running;
+  expect(submissions).toBe(0);
+  expect(store.getSnapshot().activity[0].status).toBe("failed");
+  expect(store.isBlocked()).toBe(false);
+  for (const outcome of ["confirmed", "rejected", "reverted"] as const) {
+    const h = harness();
+    h.store.begin(pair, "revoke");
+    if (outcome === "rejected") h.reject();
+    if (outcome === "reverted") h.revert();
+    await h.store.confirm();
+    expect(h.store.getSnapshot().activity[0].status).toBe(outcome);
+    expect(h.store.getSnapshot().busy).toBe(false);
+    expect(h.store.isBlocked()).toBe(false);
+  }
+});

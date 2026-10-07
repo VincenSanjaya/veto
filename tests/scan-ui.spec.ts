@@ -100,7 +100,7 @@ test("scan UI uses owner-filtered USDC logs, merges manual pairs, hides revoked,
       : await respond(request);
     await route.fulfill({ json: result });
   });
-  await page.goto("/");
+  await page.goto("/app");
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();

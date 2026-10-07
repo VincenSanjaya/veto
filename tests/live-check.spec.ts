@@ -84,7 +84,7 @@ test("manual reads: network gating, validation, snapshots, refresh, failures and
       : await response(payload);
     await route.fulfill({ json: responses });
   });
-  await page.goto("/");
+  await page.goto("/app");
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
