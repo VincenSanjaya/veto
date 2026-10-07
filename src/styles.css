@@ -105,10 +105,11 @@ main:focus {
   font-size: 35px;
   letter-spacing: -2.7px;
 }
-.wordmark svg {
+.wordmark .wordmark-logo {
   width: 28px;
   height: 30px;
-  color: var(--lime);
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .wordmark-dot {
   color: var(--lime);
@@ -1191,7 +1192,7 @@ tbody tr:last-child td {
   letter-spacing: -7px;
   gap: 16px;
 }
-.wordmark-large svg {
+.wordmark-large .wordmark-logo {
   width: 65px;
   height: 70px;
 }
@@ -1412,7 +1413,7 @@ tbody tr:last-child td {
     letter-spacing: -2px;
     gap: 6px;
   }
-  .wordmark svg {
+  .wordmark .wordmark-logo {
     width: 24px;
     height: 25px;
   }
@@ -1622,7 +1623,7 @@ tbody tr:last-child td {
     font-size: 76px;
     letter-spacing: -6px;
   }
-  .wordmark-large svg {
+  .wordmark-large .wordmark-logo {
     width: 55px;
     height: 60px;
   }

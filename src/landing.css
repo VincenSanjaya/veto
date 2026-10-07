@@ -40,7 +40,7 @@
 .landing-brand .wordmark {
   font-size: 30px;
 }
-.landing-brand .wordmark svg {
+.landing-brand .wordmark .wordmark-logo {
   width: 28px;
   height: 28px;
 }
