@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CircleHelp, X } from "lucide-react";
 import type { useAllowanceWrites } from "../hooks/useAllowanceWrites";
 import { displayTokenAmount } from "../lib/liveAllowances";
+import { verificationLabels } from "../lib/allowanceWrites";
 
 export function AllowanceChangeDialog({
   writes,
@@ -11,6 +12,7 @@ export function AllowanceChangeDialog({
   const ref = useRef<HTMLDialogElement>(null);
   const [amount, setAmount] = useState("");
   const dialog = writes.dialog!;
+  const transaction = writes.activity.find((entry) => entry.id === dialog.transactionId);
   useEffect(() => {
     const node = ref.current!;
     node.showModal();
@@ -88,6 +90,21 @@ export function AllowanceChangeDialog({
             </dd>
           </div>
         )}
+        {transaction && (
+          <>
+            <div>
+              <dt>Requested allowance (this transaction)</dt>
+              <dd>{displayTokenAmount(transaction.requested, transaction.pair.decimals)}{" "}
+                {transaction.pair.decimals === null ? "" : (transaction.pair.symbol ?? "token units")}</dd>
+            </div>
+            <div>
+              <dt>Actual allowance (receipt block)</dt>
+              <dd>{transaction.actual
+                ? `${displayTokenAmount(transaction.actual.allowance, transaction.actual.decimals)}${transaction.actual.decimals === null ? "" : ` ${transaction.actual.symbol ?? "token units"}`}`
+                : "Not yet verified"}</dd>
+            </div>
+          </>
+        )}
       </dl>
       {dialog.phase === "editing" && (
         <form
@@ -161,7 +178,9 @@ export function AllowanceChangeDialog({
           role="status"
           aria-live="polite"
         >
-          <strong>{dialog.phase.replaceAll("-", " ")}</strong>
+          <strong>{transaction?.status === "confirmed"
+            ? `Transaction confirmed / ${verificationLabels[transaction.verification]}`
+            : dialog.phase.replaceAll("-", " ")}</strong>
           <span>{dialog.message}</span>
         </p>
       )}
@@ -190,13 +209,24 @@ export function AllowanceChangeDialog({
                   : "Confirm allowance"}
           </button>
         )}
+        {transaction?.status === "confirmed" && transaction.verification === "unavailable" && (
+          <button className="secondary-button" disabled={writes.busy}
+            onClick={() => void writes.store.checkReceipt(transaction.id)}>
+            Refresh verification
+          </button>
+        )}
       </div>
       {dialog.phase === "confirmation-unknown" && (
         <p className="wallet-helper">
-          Open Activity to check the existing receipt. No automatic transaction
-          retry will occur.
+          {transaction?.hash
+            ? "Open Activity to check the existing receipt. No automatic transaction retry will occur."
+            : "No hash is available to check a receipt. Inspect your wallet and explorer manually. Writes remain blocked; Veto will not unlock or submit again automatically."}
         </p>
       )}
+      <p className="wallet-helper">
+        History and transaction guards apply only to this page session. Reloading or leaving the dashboard
+        can clear them; it does not cancel a submitted transaction. Recovery across reloads is not available.
+      </p>
     </dialog>
   );
 }

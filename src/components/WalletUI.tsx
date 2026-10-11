@@ -235,10 +235,19 @@ export function LiveWalletView({
       {writes.blocked && (
         <p className="wallet-helper">
           An allowance change is awaiting resolution. Further writes are
-          blocked. Use Activity for the originating account on Base Sepolia to
-          check its status.
+          blocked. Use Activity for the originating account to check its status.
+          {writes.blockers.map((entry) => (
+            <span className="checked-address" key={entry.id}>
+              Originating account: {entry.pair.owner} · Base Sepolia (chain ID {entry.pair.chainId})
+              {entry.hash ? ` · Transaction: ${entry.hash}` : " · No transaction hash available"}
+            </span>
+          ))}
         </p>
       )}
+      <p className="wallet-helper">
+        History and transaction guards apply only to this page session. Reloading or leaving the dashboard
+        can clear them; it does not cancel a submitted transaction. Recovery across reloads is not available.
+      </p>
       <div className="live-demo-action">
         <button
           className="secondary-button"

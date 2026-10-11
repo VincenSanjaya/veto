@@ -225,16 +225,16 @@ export class AllowanceSession {
     );
     // A late scan snapshot must never replace a newer manual/post-transaction read.
     if (previous && previous.blockNumber > result.blockNumber) return;
-    this.generation++;
     const results = this.snapshot.results.filter(
       (item) => item.key !== result.key,
     );
     this.publish({
       ...this.snapshot,
       results: [result, ...results],
-      pending: false,
-      error: "",
-      message: `Onchain values verified at block ${result.blockNumber}. Selected pair only.`,
+      error: this.snapshot.pending ? this.snapshot.error : "",
+      message: this.snapshot.pending
+        ? this.snapshot.message
+        : `Onchain values verified at block ${result.blockNumber}. Selected pair only.`,
     });
   }
   async check(tokenInput: string, spenderInput: string) {
@@ -264,18 +264,15 @@ export class AllowanceSession {
     try {
       const result = await this.reader(scope, token, spender);
       if (generation !== this.generation) return;
-      const existing = this.snapshot.results.findIndex(
-        (item) => item.key === key,
-      );
-      const results = [...this.snapshot.results];
-      if (existing < 0) results.unshift(result);
-      else results[existing] = result;
+      this.accept(result);
+      const latest = this.snapshot.results.find((item) => item.key === key)!;
       this.publish({
         ...this.snapshot,
-        results,
         pending: false,
         error: "",
-        message: `Check complete at block ${result.blockNumber}. Selected pair only.`,
+        message: latest.blockNumber > result.blockNumber
+          ? `Check complete. A newer verified snapshot at block ${latest.blockNumber} was retained. Selected pair only.`
+          : `Check complete at block ${result.blockNumber}. Selected pair only.`,
       });
     } catch (error) {
       if (generation !== this.generation) return;

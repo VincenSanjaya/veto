@@ -35,6 +35,10 @@ export type Phase =
   | "pending"
   | "reset-ready"
   | "confirmed"
+  | "verifying"
+  | "verification-unavailable"
+  | "mismatch"
+  | "reset-blocked"
   | "rejected"
   | "reverted"
   | "failed"
@@ -59,6 +63,15 @@ export type WriteDialog = {
   phase: Phase;
   resetVerified: boolean;
   message: string;
+  transactionId?: number;
+};
+export type VerificationStatus = "not-requested" | "pending" | "unavailable" | "matched" | "mismatch";
+export const verificationLabels: Record<VerificationStatus, string> = {
+  "not-requested": "Verification not requested",
+  pending: "Verification pending",
+  unavailable: "Verification unavailable",
+  matched: "Verification matched",
+  mismatch: "Verification mismatch",
 };
 export type LiveTransaction = {
   id: number;
@@ -68,12 +81,19 @@ export type LiveTransaction = {
   requested: bigint;
   desired: bigint;
   status: TxStatus;
+  verification: VerificationStatus;
   hash?: Hash;
   blockNumber?: bigint;
   actual?: CheckedPair;
   message: string;
   time: string;
 };
+export function unresolvedTransaction(entry: LiveTransaction) {
+  return entry.status === "pending" || entry.status === "awaiting-wallet" ||
+    entry.status === "confirmation-unknown" ||
+    (entry.status === "confirmed" &&
+      (entry.verification === "pending" || entry.verification === "unavailable" || !entry.actual));
+}
 export type ReceiptOutcome = {
   hash: Hash;
   blockNumber: bigint;
@@ -199,13 +219,7 @@ export class AllowanceWrites {
     );
   }
   private unresolved() {
-    return this.snapshot.activity.some(
-      (entry) =>
-        entry.status === "pending" ||
-        entry.status === "awaiting-wallet" ||
-        entry.status === "confirmation-unknown" ||
-        (entry.status === "confirmed" && !entry.actual),
-    );
+    return this.snapshot.activity.some(unresolvedTransaction);
   }
   isBlocked() {
     return this.snapshot.busy || this.unresolved();
@@ -280,6 +294,7 @@ export class AllowanceWrites {
     this.dialog(
       {
         phase: "reading",
+        transactionId: undefined,
         message:
           "Re-reading the current allowance before requesting a transaction…",
       },
@@ -361,6 +376,7 @@ export class AllowanceWrites {
         requested: amount,
         desired: dialog.proposed,
         status: "awaiting-wallet",
+        verification: "not-requested",
         time: new Date().toISOString(),
         message:
           "Waiting for your wallet. A transaction has not been confirmed.",
@@ -369,6 +385,7 @@ export class AllowanceWrites {
       this.dialog(
         {
           phase: "awaiting-wallet",
+          transactionId: entry.id,
           message:
             "Awaiting wallet confirmation. Check the account and Base Sepolia network in your wallet.",
         },
@@ -451,6 +468,7 @@ export class AllowanceWrites {
       hash: receipt.hash,
       blockNumber: receipt.blockNumber,
       status: receipt.status === "success" ? "confirmed" : receipt.status,
+      verification: receipt.status === "success" ? "pending" : "not-requested",
       message:
         receipt.status === "reverted"
           ? "Transaction reverted. Testnet gas may still have been spent."
@@ -480,10 +498,14 @@ export class AllowanceWrites {
     generation: number,
   ) {
     const entry = this.snapshot.activity.find((item) => item.id === entryId)!;
+    this.updateEntry(entryId, { verification: "pending" });
+    if (dialogId && this.sameContext(entry.pair, generation))
+      this.dialog({ phase: "verifying", message: "Transaction confirmed. Verifying the actual allowance…" }, dialogId);
     try {
       const actual = await this.deps.read(entry.pair, entry.blockNumber);
-      const message = `Receipt confirmed. Actual raw allowance: ${actual.allowance}. Actual raw balance: ${actual.balance}. Verified at block ${actual.blockNumber}.`;
-      this.updateEntry(entryId, { actual, message });
+      const matched = actual.allowance === entry.requested;
+      const message = `Receipt confirmed. Requested raw allowance: ${entry.requested}. Actual raw allowance: ${actual.allowance}. Actual raw balance: ${actual.balance}. Verified at block ${actual.blockNumber}.${matched ? "" : " Mismatch: actual allowance differs from requested."}${entry.step === "revoke" && actual.allowance !== 0n ? " Revoke did not remove the permission." : ""}`;
+      this.updateEntry(entryId, { actual, verification: matched ? "matched" : "mismatch", message });
       if (!this.sameContext(entry.pair, generation)) return;
       this.deps.observed(actual);
       if (dialogId) {
@@ -496,7 +518,7 @@ export class AllowanceWrites {
               pair: actual,
               resetVerified: actual.allowance === 0n,
               proposed: null,
-              phase: "failed",
+              phase: "reset-blocked",
               message:
                 "Reset receipt confirmed, but token decimals changed or became unavailable. Refresh the token and start a new finite-amount confirmation. No second transaction was requested.",
             },
@@ -509,7 +531,7 @@ export class AllowanceWrites {
             {
               pair: actual,
               resetVerified: actual.allowance === 0n,
-              phase: actual.allowance === 0n ? "reset-ready" : "failed",
+              phase: actual.allowance === 0n ? "reset-ready" : "mismatch",
               message:
                 actual.allowance === 0n
                   ? "Reset confirmed and zero allowance verified. The allowance remains zero until you click Continue and confirm the second transaction."
@@ -522,24 +544,25 @@ export class AllowanceWrites {
             {
               pair: actual,
               resetVerified: false,
-              phase: "confirmed",
+              phase: matched ? "confirmed" : "mismatch",
               message:
                 actual.allowance === entry.requested
                   ? "Receipt confirmed. The displayed allowance and balance are verified onchain."
-                  : "Receipt confirmed, but the actual allowance differs from the requested amount. The displayed result is the actual onchain value.",
+                  : `Receipt confirmed, but the actual allowance differs from the requested amount. The displayed result is the actual onchain value.${entry.step === "revoke" ? " Revoke did not remove the permission; the actual allowance is still nonzero." : ""}`,
             },
             dialogId,
           );
       }
     } catch {
       this.updateEntry(entryId, {
+        verification: "unavailable",
         message:
           "Receipt confirmed, but allowance/balance verification failed. Refresh verification before relying on the requested amount.",
       });
       if (dialogId && this.sameContext(entry.pair, generation))
         this.dialog(
           {
-            phase: "failed",
+            phase: "verification-unavailable",
             message:
               "Receipt confirmed, but actual allowance verification failed. No next transaction is allowed until verification succeeds. Use Refresh verification in Activity.",
           },
@@ -554,8 +577,7 @@ export class AllowanceWrites {
     const dialog = this.snapshot.dialog;
     const matchingDialog =
       dialog &&
-      dialog.pair.key === entry.pair.key &&
-      dialog.proposed === entry.desired
+      dialog.transactionId === entry.id
         ? dialog.id
         : undefined;
     this.publish({ busy: true });

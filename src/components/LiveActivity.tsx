@@ -2,6 +2,7 @@ import { ArrowUpRight, History, RefreshCw } from "lucide-react";
 import { baseSepolia } from "viem/chains";
 import type { useAllowanceWrites } from "../hooks/useAllowanceWrites";
 import { displayTokenAmount } from "../lib/liveAllowances";
+import { verificationLabels } from "../lib/allowanceWrites";
 
 export function LiveActivity({
   writes,
@@ -45,7 +46,8 @@ export function LiveActivity({
                       ? "Revoke allowance"
                       : "Set finite allowance"}
                   <span className={`transaction-tag status-${entry.status}`}>
-                    {entry.status.replaceAll("-", " ")}
+                    Transaction {entry.status.replaceAll("-", " ")}
+                    {entry.status === "confirmed" && ` / ${verificationLabels[entry.verification]}`}
                   </span>
                 </h3>
                 <p>
@@ -65,17 +67,26 @@ export function LiveActivity({
                 </p>
                 {entry.actual && (
                   <p>
-                    Verified allowance:{" "}
+                    Actual allowance:{" "}
                     {displayTokenAmount(
                       entry.actual.allowance,
                       entry.actual.decimals,
-                    )}{" "}
+                    )}{" "}{entry.actual.decimals === null ? "" : (entry.actual.symbol ?? "token units")}
                     · Balance:{" "}
                     {displayTokenAmount(
                       entry.actual.balance,
                       entry.actual.decimals,
                     )}{" "}
                     · Block {entry.actual.blockNumber.toString()}
+                  </p>
+                )}
+                {!entry.actual && entry.status === "confirmed" && (
+                  <p>Actual allowance: unavailable until verification succeeds.</p>
+                )}
+                {entry.status === "confirmation-unknown" && !entry.hash && (
+                  <p className="wallet-helper">
+                    No hash is available to check a receipt. Inspect the originating wallet and explorer manually.
+                    Writes remain blocked; Veto will not unlock or submit again automatically.
                   </p>
                 )}
                 <p className="transaction-message">{entry.message}</p>
@@ -99,7 +110,7 @@ export function LiveActivity({
                 )}
                 {entry.hash &&
                   (entry.status === "confirmation-unknown" ||
-                    (entry.status === "confirmed" && !entry.actual)) && (
+                    (entry.status === "confirmed" && entry.verification === "unavailable")) && (
                     <button
                       className="secondary-button receipt-check"
                       disabled={writes.busy}

@@ -4,6 +4,7 @@ import { getConnection } from "wagmi/actions";
 import { walletConfig } from "../lib/wagmi";
 import { walletScope } from "../lib/liveAllowances";
 import { liveWriteStore } from "../lib/liveWriteStore";
+import { unresolvedTransaction } from "../lib/allowanceWrites";
 
 export function useAllowanceWrites() {
   const connection = useConnection();
@@ -37,6 +38,7 @@ export function useAllowanceWrites() {
       (entry) => entry.scopeKey === scope?.key,
     ),
     blocked: liveWriteStore.isBlocked(),
+    blockers: snapshot.activity.filter(unresolvedTransaction),
     store: liveWriteStore,
   };
 }
